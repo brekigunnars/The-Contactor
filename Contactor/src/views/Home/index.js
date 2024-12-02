@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,57 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import ContactItem from '../../components/ContactItem';
+
+const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
 
 const Home = ({ navigation }) => {
-  // Placeholder for the empty contact list
-  const renderEmptyList = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No Contacts Yet</Text>
-    </View>
+  const [contacts, setContacts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch contacts from the file system
+  const fetchContacts = async () => {
+    try {
+      const dirInfo = await FileSystem.getInfoAsync(CONTACTS_DIR);
+      if (!dirInfo.exists) {
+        setContacts([]);
+        return;
+      }
+
+      const files = await FileSystem.readDirectoryAsync(CONTACTS_DIR);
+      const contactData = await Promise.all(
+        files.map(async (fileName) => {
+          const fileUri = `${CONTACTS_DIR}${fileName}`;
+          const content = await FileSystem.readAsStringAsync(fileUri);
+          return JSON.parse(content);
+        })
+      );
+
+      const sortedContacts = contactData.sort((a, b) =>
+        a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+      );
+
+      setContacts(sortedContacts);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      Alert.alert('Error', 'Failed to load contacts.');
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', fetchContacts); // Fetch contacts on screen focus
+    return unsubscribe; // Cleanup listener on unmount
+  }, [navigation]);
+
+  const filteredContacts = contacts.filter((contact) =>
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Contacts</Text>
         <TouchableOpacity
@@ -29,19 +67,23 @@ const Home = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
       <TextInput
         style={styles.searchBar}
         placeholder="Search"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
         placeholderTextColor="#999"
       />
 
-      {/* Empty Contact List */}
       <FlatList
-        data={[]} // Empty data for now
-        keyExtractor={(item) => item.id}
-        renderItem={() => null} // No rendering for empty list
-        ListEmptyComponent={renderEmptyList} // Render when no data
+        data={filteredContacts}
+        keyExtractor={(item) => item.id} // Use unique ID for the key
+        renderItem={({ item }) => <ContactItem contact={item} />} // Pass the contact data to ContactItem
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No Contacts Yet</Text>
+          </View>
+        )}
         contentContainerStyle={styles.listContainer}
       />
     </View>

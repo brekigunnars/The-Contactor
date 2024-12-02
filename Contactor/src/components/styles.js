@@ -8,82 +8,51 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import uuid from 'react-native-uuid'; // Import react-native-uuid
-
-const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
 
 const CreateContact = ({ navigation }) => {
-  const [image, setImage] = useState(null); // State for the photo
+  const [image, setImage] = useState(null); // State to hold the selected or captured image
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Ensure the contacts directory exists
-  const ensureDirectoryExists = async () => {
-    const dirInfo = await FileSystem.getInfoAsync(CONTACTS_DIR);
-    if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(CONTACTS_DIR, { intermediates: true });
+  // Request permissions for accessing the media library
+  const requestGalleryPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'We need permission to access your media library to choose a photo.'
+      );
+      return false;
     }
-  };
-
-  // Save the contact to the file system
-  const saveContact = async () => {
-    if (!name || !phone || !image) {
-      Alert.alert('Error', 'Please fill out all fields and add a photo.');
-      return;
-    }
-
-    try {
-      await ensureDirectoryExists();
-
-      // Generate a UUID and format the file name
-      const uniqueId = uuid.v4();
-      const fileName = `${name}-${uniqueId}.json`;
-      const fileUri = `${CONTACTS_DIR}${fileName}`;
-
-      const contact = {
-        name,
-        phoneNumber: phone,
-        photo: image, // Save the image URI
-      };
-
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(contact));
-      Alert.alert('Success', 'Contact saved successfully!');
-      navigation.goBack(); // Navigate back to the Home screen
-    } catch (error) {
-      console.error('Error saving contact:', error);
-      Alert.alert('Error', 'Failed to save contact.');
-    }
+    return true;
   };
 
   // Function to pick an image from the gallery
   const pickImageFromGallery = async () => {
-    console.log('Gallery Picker Called');
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'We need access to your media library.');
-      return;
-    }
+    console.log('Opening gallery...');
+    const hasPermission = await requestGalleryPermissions();
+    if (!hasPermission) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Image, // Updated to MediaType.Image
       allowsEditing: true,
-      aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri); // Update the photo state
+      console.log('Image selected:', result.assets[0].uri);
+      setImage(result.assets[0].uri); // Update the image state immediately
+    } else {
+      console.log('Gallery selection canceled');
     }
   };
 
   // Function to take a photo using the camera
   const takePhoto = async () => {
-    console.log('Camera Picker Called');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'We need access to your camera.');
+      Alert.alert('Permission Denied', 'Camera access is required to take a picture.');
       return;
     }
 
@@ -93,8 +62,22 @@ const CreateContact = ({ navigation }) => {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri); // Update the photo state
+      console.log('Photo taken:', result.assets[0].uri);
+      setImage(result.assets[0].uri); // Update the image state immediately
+    } else {
+      console.log('Camera capture canceled');
     }
+  };
+
+  // Save the contact and navigate back
+  const saveContact = () => {
+    if (!name || !phone) {
+      Alert.alert('Error', 'Please fill out all fields.');
+      return;
+    }
+
+    Alert.alert('Success', 'Contact saved successfully!');
+    navigation.goBack();
   };
 
   return (
@@ -152,7 +135,7 @@ const CreateContact = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#000', // Dark mode background
     padding: 20,
   },
   header: {

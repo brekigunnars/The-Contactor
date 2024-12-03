@@ -5,8 +5,8 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import ContactItem from '../../components/ContactItem';
@@ -25,31 +25,85 @@ const Home = ({ navigation }) => {
         setContacts([]);
         return;
       }
-
+  
       const files = await FileSystem.readDirectoryAsync(CONTACTS_DIR);
       const contactData = await Promise.all(
         files.map(async (fileName) => {
           const fileUri = `${CONTACTS_DIR}${fileName}`;
           const content = await FileSystem.readAsStringAsync(fileUri);
-          return JSON.parse(content);
+          const parsedContact = JSON.parse(content);
+  
+          // Debug to check if `id` exists
+          console.log('Fetched contact:', parsedContact);
+  
+          return parsedContact;
         })
       );
-
+  
       const sortedContacts = contactData.sort((a, b) =>
         a.name.toLowerCase().localeCompare(b.name.toLowerCase())
       );
-
+  
       setContacts(sortedContacts);
     } catch (error) {
       console.error('Error fetching contacts:', error);
       Alert.alert('Error', 'Failed to load contacts.');
     }
   };
+  
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', fetchContacts); // Fetch contacts on screen focus
-    return unsubscribe; // Cleanup listener on unmount
+    return unsubscribe;
   }, [navigation]);
+
+  // Handle long press on a contact
+  const handleLongPress = (contact) => {
+    Alert.alert(
+      'Contact Options',
+      `What would you like to do with ${contact.name}?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Edit Contact',
+          onPress: () => navigation.navigate('EditContact', { contact }),
+        },
+        {
+          text: 'Delete Contact',
+          onPress: () => handleDeleteContact(contact),
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
+  // Delete a contact
+  const handleDeleteContact = async (contact) => {
+    try {
+      console.log('Contact to delete:', contact);
+  
+      const fileName = `${contact.name}-${contact.id}.json`; // Ensure correct format
+      const fileUri = `${CONTACTS_DIR}${fileName}`;
+  
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error(`File ${fileUri} does not exist.`);
+      }
+  
+      await FileSystem.deleteAsync(fileUri);
+      Alert.alert('Success', 'Contact deleted successfully!');
+      fetchContacts(); // Refresh the contact list
+    } catch (error) {
+      console.error('Error deleting contact:', error.message);
+      Alert.alert('Error', `Failed to delete contact: ${error.message}`);
+    }
+  };
+  
+  
+  
 
   const filteredContacts = contacts.filter((contact) =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -77,8 +131,17 @@ const Home = ({ navigation }) => {
 
       <FlatList
         data={filteredContacts}
-        keyExtractor={(item) => item.id} // Use unique ID for the key
-        renderItem={({ item }) => <ContactItem contact={item} />} // Pass the contact data to ContactItem
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onLongPress={() => handleLongPress(item)} // Handle long press
+            onPress={() =>
+              navigation.navigate('ContactDetails', { contact: item })
+            } // Navigate to Contact Details on tap
+          >
+            <ContactItem contact={item} />
+          </TouchableOpacity>
+        )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No Contacts Yet</Text>
@@ -93,7 +156,7 @@ const Home = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Dark background
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -101,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingTop: 45,
-    paddingBottom: 10, // Adds padding between header and the search bar
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#222',
   },
@@ -117,7 +180,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF', // Blue "+" button
+    color: '#007AFF',
   },
   searchBar: {
     backgroundColor: '#222',

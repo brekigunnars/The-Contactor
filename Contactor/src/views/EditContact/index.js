@@ -10,59 +10,55 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import uuid from 'react-native-uuid'; // Import react-native-uuid
 
 const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
 
-const CreateContact = ({ navigation }) => {
-  const [image, setImage] = useState(null); // State for the photo
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+const EditContact = ({ route, navigation }) => {
+  const { contact } = route.params; // Receive the contact data
+  const [image, setImage] = useState(contact.photo);
+  const [name, setName] = useState(contact.name);
+  const [phone, setPhone] = useState(contact.phoneNumber);
 
-  // Ensure the contacts directory exists
-  const ensureDirectoryExists = async () => {
-    const dirInfo = await FileSystem.getInfoAsync(CONTACTS_DIR);
-    if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(CONTACTS_DIR, { intermediates: true });
-    }
-  };
-
-  // Save the contact to the file system
-  const saveContact = async () => {
+  const updateContact = async () => {
     if (!name || !phone || !image) {
       Alert.alert('Error', 'Please fill out all fields and add a photo.');
       return;
     }
   
     try {
-      await ensureDirectoryExists();
+      // The original file name based on the original contact data
+      const originalFileName = `${contact.name}-${contact.id}.json`;
+      const originalFileUri = `${CONTACTS_DIR}${originalFileName}`;
   
-      const uniqueId = uuid.v4(); // Generate a unique ID
-      const fileName = `${name}-${uniqueId}.json`; // Use the ID in the file name
-      const fileUri = `${CONTACTS_DIR}${fileName}`;
+      // Delete the old file
+      const fileInfo = await FileSystem.getInfoAsync(originalFileUri);
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(originalFileUri);
+      }
   
-      const contact = {
-        id: uniqueId, // Include the ID
+      // Create a new file name with updated information
+      const newFileName = `${name}-${contact.id}.json`; // Keep the same ID
+      const newFileUri = `${CONTACTS_DIR}${newFileName}`;
+  
+      const updatedContact = {
+        id: contact.id, // Keep the same ID
         name,
         phoneNumber: phone,
         photo: image,
       };
   
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(contact));
-      Alert.alert('Success', 'Contact saved successfully!');
-      navigation.goBack();
+      await FileSystem.writeAsStringAsync(newFileUri, JSON.stringify(updatedContact));
+      Alert.alert('Success', 'Contact updated successfully!');
+      navigation.goBack(); // Navigate back to the Contact Details screen
     } catch (error) {
-      console.error('Error saving contact:', error);
-      Alert.alert('Error', 'Failed to save contact.');
+      console.error('Error updating contact:', error);
+      Alert.alert('Error', 'Failed to update contact.');
     }
   };
-  
-  
   
 
   // Function to pick an image from the gallery
   const pickImageFromGallery = async () => {
-    console.log('Gallery Picker Called');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'We need access to your media library.');
@@ -83,7 +79,6 @@ const CreateContact = ({ navigation }) => {
 
   // Function to take a photo using the camera
   const takePhoto = async () => {
-    console.log('Camera Picker Called');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'We need access to your camera.');
@@ -107,9 +102,9 @@ const CreateContact = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>New Contact</Text>
-        <TouchableOpacity onPress={saveContact}>
-          <Text style={styles.doneButton}>Done</Text>
+        <Text style={styles.title}>Edit Contact</Text>
+        <TouchableOpacity onPress={updateContact}>
+          <Text style={styles.doneButton}>Save</Text>
         </TouchableOpacity>
       </View>
 
@@ -136,14 +131,12 @@ const CreateContact = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder="Name"
-        placeholderTextColor="#999"
         value={name}
         onChangeText={setName}
       />
       <TextInput
         style={styles.input}
         placeholder="Phone Number"
-        placeholderTextColor="#999"
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
@@ -179,20 +172,12 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     alignItems: 'center',
-    marginVertical: 20,
-  },
-  photoButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#222',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 30,
   },
   photo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   addPhotoText: {
     color: '#999',
@@ -227,4 +212,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateContact;
+export default EditContact;

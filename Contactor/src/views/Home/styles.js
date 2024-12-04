@@ -1,17 +1,17 @@
 import { StyleSheet } from "react-native";
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Dark background like the screenshot
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingTop: 45,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#222',
   },
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF', // Blue "+" button
+    color: '#007AFF',
   },
   searchBar: {
     backgroundColor: '#222',
@@ -40,17 +40,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContainer: {
+    flexGrow: 1,
     paddingHorizontal: 15,
   },
-  contactItem: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contactName: {
-    fontSize: 18,
+  emptyText: {
+    fontSize: 16,
+    color: '#777',
+  },
+  importButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignSelf: 'center',
+    marginVertical: 15,
+  },
+  importButtonText: {
     color: '#fff',
-  },
+    fontSize: 16,
+    fontWeight: 'bold',
+  },  
 });
 
 export default styles;

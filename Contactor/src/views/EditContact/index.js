@@ -5,11 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  StyleSheet,
   Alert,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import styles from './styles';
 
 const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
 
@@ -157,72 +157,5 @@ const EditContact = ({ route, navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cancelButton: {
-    color: '#007AFF',
-    fontSize: 18,
-  },
-  doneButton: {
-    color: '#007AFF',
-    fontSize: 18,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  photoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  photo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  addPhotoText: {
-    color: '#999',
-    fontSize: 16,
-  },
-  photoOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 10,
-  },
-  optionButton: {
-    backgroundColor: '#444',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  optionText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#444',
-    backgroundColor: '#222',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 15,
-  },
-});
 
 export default EditContact;

@@ -7,74 +7,44 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import uuid from 'react-native-uuid';
 import styles from './styles';
 
-const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
-
 const CreateContact = ({ navigation }) => {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // State to hold the selected or captured image
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Ensure the contacts directory exists
-  const ensureDirectoryExists = async () => {
-    const dirInfo = await FileSystem.getInfoAsync(CONTACTS_DIR);
-    if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(CONTACTS_DIR, { intermediates: true });
+  // Request permissions for accessing the media library
+  const requestGalleryPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'We need permission to access your media library to choose a photo.'
+      );
+      return false;
     }
-  };
-
-  // Save the contact to the file system
-  const saveContact = async () => {
-    if (!name || !phone) {
-      Alert.alert('Error', 'Name and Phone Number are required.');
-      return;
-    }
-
-    try {
-      await ensureDirectoryExists();
-
-      // Generate a UUID and format the file name
-      const uniqueId = uuid.v4();
-      const fileName = `${sanitizeFileName(name)}-${uniqueId}.json`;
-      const fileUri = `${CONTACTS_DIR}${fileName}`;
-
-      const contact = {
-        id: uniqueId,
-        name,
-        phoneNumber: phone,
-        photo: image || null, // Optional photo
-      };
-
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(contact));
-      Alert.alert('Success', 'Contact saved successfully!');
-      navigation.goBack(); // Navigate back to the Home screen
-    } catch (error) {
-      console.error('Error saving contact:', error);
-      Alert.alert('Error', 'Failed to save contact.');
-    }
+    return true;
   };
 
   // Function to pick an image from the gallery
   const pickImageFromGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'We need access to your media library.');
-      return;
-    }
+    console.log('Opening gallery...');
+    const hasPermission = await requestGalleryPermissions();
+    if (!hasPermission) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Image, // Updated to MediaType.Image
       allowsEditing: true,
-      aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri); // Update the photo state
+      console.log('Image selected:', result.assets[0].uri);
+      setImage(result.assets[0].uri); // Update the image state immediately
+    } else {
+      console.log('Gallery selection canceled');
     }
   };
 
@@ -82,7 +52,7 @@ const CreateContact = ({ navigation }) => {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'We need access to your camera.');
+      Alert.alert('Permission Denied', 'Camera access is required to take a picture.');
       return;
     }
 
@@ -92,13 +62,22 @@ const CreateContact = ({ navigation }) => {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri); // Update the photo state
+      console.log('Photo taken:', result.assets[0].uri);
+      setImage(result.assets[0].uri); // Update the image state immediately
+    } else {
+      console.log('Camera capture canceled');
     }
   };
 
-  // Function to sanitize the file name
-  const sanitizeFileName = (name) => {
-    return name.replace(/[^a-zA-Z0-9-_]/g, '_'); // Replace invalid characters with '_'
+  // Save the contact and navigate back
+  const saveContact = () => {
+    if (!name || !phone) {
+      Alert.alert('Error', 'Please fill out all fields.');
+      return;
+    }
+
+    Alert.alert('Success', 'Contact saved successfully!');
+    navigation.goBack();
   };
 
   return (

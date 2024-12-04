@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import styles from './styles';
 
 const pickImageFromGallery = async () => {
     console.log('Button Pressed: Opening gallery...');

@@ -4,7 +4,6 @@ import * as FileSystem from 'expo-file-system';
 import InputField from './InputField';
 import ImagePickerComponent from './ImagePickerComponent';
 import SaveButton from './SaveButton';
-import styles from './styles';
 
 const CONTACTS_DIR = `${FileSystem.documentDirectory}contacts/`;
 

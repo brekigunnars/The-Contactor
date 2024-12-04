@@ -20,34 +20,36 @@ const EditContact = ({ route, navigation }) => {
   const [phone, setPhone] = useState(contact.phoneNumber);
 
   const updateContact = async () => {
-    if (!name || !phone || !image) {
-      Alert.alert('Error', 'Please fill out all fields and add a photo.');
+    if (!name || !phone) {
+      Alert.alert('Error', 'Please fill out both the name and phone number.');
       return;
     }
   
     try {
-      // The original file name based on the original contact data
-      const originalFileName = `${contact.name}-${contact.id}.json`;
+      await ensureContactsDirectoryExists(); // Ensure directory exists
+  
+      // Original file name based on the original contact data
+      const originalFileName = `${sanitizeFileName(contact.name)}-${contact.id}.json`;
       const originalFileUri = `${CONTACTS_DIR}${originalFileName}`;
   
-      // Delete the old file
+      // Delete the old file if it exists
       const fileInfo = await FileSystem.getInfoAsync(originalFileUri);
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(originalFileUri);
       }
   
-      // Create a new file name with updated information
-      const newFileName = `${name}-${contact.id}.json`; // Keep the same ID
-      const newFileUri = `${CONTACTS_DIR}${newFileName}`;
-  
+      // Save the updated contact
       const updatedContact = {
         id: contact.id, // Keep the same ID
         name,
         phoneNumber: phone,
-        photo: image,
+        photo: image || null, // Allow optional photo
       };
   
-      await FileSystem.writeAsStringAsync(newFileUri, JSON.stringify(updatedContact));
+      const updatedFileName = `${sanitizeFileName(name)}-${contact.id}.json`; // Use updated name
+      const updatedFileUri = `${CONTACTS_DIR}${updatedFileName}`;
+  
+      await FileSystem.writeAsStringAsync(updatedFileUri, JSON.stringify(updatedContact));
       Alert.alert('Success', 'Contact updated successfully!');
       navigation.goBack(); // Navigate back to the Contact Details screen
     } catch (error) {
@@ -56,6 +58,17 @@ const EditContact = ({ route, navigation }) => {
     }
   };
   
+  
+  const ensureContactsDirectoryExists = async () => {
+    const dirInfo = await FileSystem.getInfoAsync(CONTACTS_DIR);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(CONTACTS_DIR, { intermediates: true });
+    }
+  };
+  
+  const sanitizeFileName = (name) => {
+    return name.replace(/[^a-zA-Z0-9-_]/g, '_'); // Replace invalid characters with '_'
+  };
 
   // Function to pick an image from the gallery
   const pickImageFromGallery = async () => {

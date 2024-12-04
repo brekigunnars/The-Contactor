@@ -1,39 +1,53 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, Linking } from 'react-native';
 
 const ContactDetails = ({ route, navigation }) => {
-  const { contact } = route.params; // Retrieve the passed contact data
+  const { contact } = route.params;
+
+  // Function to initiate a call
+  const handleCall = async () => {
+    if (!contact.phoneNumber) {
+      Alert.alert('Error', 'This contact has no phone number.');
+      return;
+    }
+
+    const url = `tel:${contact.phoneNumber}`;
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Your device does not support making calls.');
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('EditContact', { contact })}
-        style={styles.editButton}
-      >
-        <Text style={styles.editButtonText}>Edit</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backButton}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Contact Details</Text>
       </View>
 
-      {/* Contact Photo */}
-      <View style={styles.photoContainer}>
-        {contact.photo ? (
-          <Image source={{ uri: contact.photo }} style={styles.photo} />
-        ) : (
-          <View style={styles.placeholderPhoto} />
-        )}
-      </View>
+      {/* Photo */}
+      {contact.photo ? (
+        <Image source={{ uri: contact.photo }} style={styles.photo} />
+      ) : (
+        <View style={styles.photoPlaceholder}>
+          <Text style={styles.photoPlaceholderText}>No Photo</Text>
+        </View>
+      )}
 
       {/* Contact Info */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{contact.name}</Text>
+      <Text style={styles.contactName}>{contact.name}</Text>
+      <Text style={styles.contactPhone}>{contact.phoneNumber}</Text>
 
-        <Text style={styles.label}>Phone Number</Text>
-        <Text style={styles.value}>{contact.phoneNumber}</Text>
-      </View>
+      {/* Call Button */}
+      <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+        <Text style={styles.callButtonText}>Call</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -59,33 +73,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  photoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
   photo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  placeholderPhoto: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#222',
-  },
-  infoContainer: {
-    marginTop: 20,
-  },
-  label: {
-    fontSize: 14,
-    color: '#777',
-    marginBottom: 5,
-  },
-  value: {
-    fontSize: 18,
-    color: '#fff',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
     marginBottom: 20,
+  },
+  photoPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  photoPlaceholderText: {
+    color: '#999',
+    fontSize: 14,
+  },
+  contactName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  contactPhone: {
+    fontSize: 18,
+    color: '#aaa',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  callButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignSelf: 'center',
+  },
+  callButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

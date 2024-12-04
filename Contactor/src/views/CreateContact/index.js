@@ -29,40 +29,37 @@ const CreateContact = ({ navigation }) => {
 
   // Save the contact to the file system
   const saveContact = async () => {
-    if (!name || !phone || !image) {
-      Alert.alert('Error', 'Please fill out all fields and add a photo.');
+    if (!name || !phone) {
+      Alert.alert('Error', 'Name and Phone Number are required.');
       return;
     }
-  
+
     try {
       await ensureDirectoryExists();
-  
-      const uniqueId = uuid.v4(); // Generate a unique ID
-      const fileName = `${name}-${uniqueId}.json`; // Use the ID in the file name
+
+      // Generate a UUID and format the file name
+      const uniqueId = uuid.v4();
+      const fileName = `${sanitizeFileName(name)}-${uniqueId}.json`;
       const fileUri = `${CONTACTS_DIR}${fileName}`;
-  
+
       const contact = {
-        id: uniqueId, // Include the ID
+        id: uniqueId,
         name,
         phoneNumber: phone,
-        photo: image,
+        photo: image || null, // Optional photo
       };
-  
+
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(contact));
       Alert.alert('Success', 'Contact saved successfully!');
-      navigation.goBack();
+      navigation.goBack(); // Navigate back to the Home screen
     } catch (error) {
       console.error('Error saving contact:', error);
       Alert.alert('Error', 'Failed to save contact.');
     }
   };
-  
-  
-  
 
   // Function to pick an image from the gallery
   const pickImageFromGallery = async () => {
-    console.log('Gallery Picker Called');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'We need access to your media library.');
@@ -83,7 +80,6 @@ const CreateContact = ({ navigation }) => {
 
   // Function to take a photo using the camera
   const takePhoto = async () => {
-    console.log('Camera Picker Called');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'We need access to your camera.');
@@ -98,6 +94,11 @@ const CreateContact = ({ navigation }) => {
     if (!result.canceled) {
       setImage(result.assets[0].uri); // Update the photo state
     }
+  };
+
+  // Function to sanitize the file name
+  const sanitizeFileName = (name) => {
+    return name.replace(/[^a-zA-Z0-9-_]/g, '_'); // Replace invalid characters with '_'
   };
 
   return (
